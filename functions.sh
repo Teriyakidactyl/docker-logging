@@ -4,7 +4,7 @@
 # --------------------------------------------------------------------------
 
 # Load ENV config if available
-CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/logging_config.sh"
+CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/config.sh"
 if [ -f "$CONFIG_FILE" ]; then
     # Source the environment variables from the config file
     source "$CONFIG_FILE"
@@ -14,7 +14,7 @@ else
 fi
 
 # Load app-specific config if available
-APP_CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/logging_app_config.sh"
+APP_CONFIG_FILE="$(dirname "${BASH_SOURCE[0]}")/app_config.sh"
 if [ -f "$APP_CONFIG_FILE" ]; then
     # Store original values before loading app config
     ORIG_LOG_FILTER_SKIP="$LOG_FILTER_SKIP"
