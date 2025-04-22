@@ -90,7 +90,9 @@ main() {
     
     # Infinite loop while APP_PID is running
     while kill -0 $APP_PID > /dev/null 2>&1; do
-        current_minute=$(date '+%M' | sed 's/^0*//')
+        current_minute=$(date '+%M')
+        # Remove leading zeros safely by using parameter expansion instead of sed
+        current_minute=${current_minute#0}
         
         # Run scheduled cron hooks
         run_cron_hooks
@@ -195,8 +197,10 @@ run_hooks() {
 
 # Run cron hooks based on schedule
 run_cron_hooks() {
-    # Get current time components
-    local current_minute=$(date '+%M' | sed 's/^0*//')
+    # Get current time components using parameter expansion instead of sed
+    local current_minute=$(date '+%M')
+    current_minute=${current_minute#0}  # Remove leading zero safely
+    
     local current_hour=$(date '+%H')
     local current_day=$(date '+%d')
     local current_week=$(date '+%U')  # Week number
