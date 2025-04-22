@@ -62,22 +62,15 @@ main() {
         APP_COMMAND="/bin/bash"
     fi
     
-    # Initialize cron system
     initialize_cron
     log_clean
-    
-    # Auto-source startup hooks
-    log "Running startup hooks..."
-    run_hooks "startup"
-    
-    # Call log_tails function which tails all logs in $LOGS directory
-    log_tails
-    
+    run_hooks "startup" 
+ 
     # Launch the main application process
     log "Launching application: $APP_COMMAND"
     
     # Run the application in the background and capture its PID
-    eval "$APP_COMMAND" &
+    $APP_COMMAND >> $LOGS/$APP_EXE.log 2>&1 &
     APP_PID=$!
     
     # Verify the process started successfully
@@ -87,21 +80,24 @@ main() {
     fi
     
     log "Container monitoring started for $APP_COMMAND (PID: $APP_PID)"
+
+    # Call log_tails function which tails all logs in $LOGS directory
+    log_tails
     
     # Infinite loop while APP_PID is running
     while kill -0 $APP_PID > /dev/null 2>&1; do
         current_minute=$(date '+%M')
+
         # Remove leading zeros safely by using parameter expansion instead of sed
         current_minute=${current_minute#0}
         
         # Run scheduled cron hooks
         run_cron_hooks
-        
-        # Run application loop hooks
-        if [ -d "/hooks/loop" ]; then
-            run_hooks "loop"
-        fi
-        
+
+        if (( current_minute % 10 == 0 )); then
+            log "$(uptime)"
+        fi        
+       
         # Sleep for 1 minute before checking again
         sleep 60
     done
