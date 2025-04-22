@@ -74,8 +74,15 @@ timestamp() {
         formatted_time="$current_time"
     fi
     
-    # Clean up any resulting double spaces
-    output_line=$(echo "$output_line" | sed -e 's/  / /g' -e 's/^ //' -e 's/ $//')
+    # Clean up any resulting double spaces - using bash string operations instead of sed
+    # Replace double spaces with single space
+    while [[ "$output_line" == *"  "* ]]; do
+        output_line="${output_line//  / }"
+    done
+    
+    # Remove leading and trailing spaces
+    output_line="${output_line## }"
+    output_line="${output_line%% }"
     
     # Return both timestamp components and the modified line
     echo "${formatted_date}|${formatted_time}|${output_line}"
@@ -219,18 +226,28 @@ log() {
     local line="$1"
     local filename="${2:-$caller_function}"
 
-    # Trim all whitespace characters, including newlines
-    line=$(echo "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/\r//' -e 's/\n//')
+    # Trim all whitespace characters, including newlines - using bash string operations instead of sed
+    # Remove carriage returns and newlines
+    line="${line//[$'\r\n']/}"
+    
+    # Trim leading and trailing whitespace
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
     
     # Apply custom cleanup patterns if defined in config
     if [[ -n "$LOG_FORMAT_CLEANUP" ]]; then
         IFS=',' read -ra CLEANUP_PATTERNS <<< "$LOG_FORMAT_CLEANUP"
         for pattern in "${CLEANUP_PATTERNS[@]}"; do
-            line=$(echo "$line" | sed -E "$pattern")
+            # Be extra careful with sed - use a wrapper function
+            line=$(safe_sed "$line" "$pattern")
         done
     else
         # Default cleanup - Strip the conan time stamp, ex. [2024.07.13-19.42.42:171]
-        line=$(echo "$line" | sed -E 's/\[[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]{2}\.[0-9]{2}\.[0-9]{2}:[0-9]{3}\]//')
+        # Using pattern matching instead of sed
+        if [[ "$line" =~ \[[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]{2}\.[0-9]{2}\.[0-9]{2}:[0-9]{3}\] ]]; then
+            matched="${BASH_REMATCH[0]}"
+            line="${line//$matched/}"
+        fi
     fi
     
     # Skip empty lines
@@ -247,12 +264,12 @@ log() {
     
     # Construct the formatted line according to format template if available
     if [[ -n "$LOG_FORMAT_TEMPLATE" ]]; then
-        # Replace placeholders in format template
-        local formatted_line=$(echo "$LOG_FORMAT_TEMPLATE" | 
-            sed -e "s/%DATE%/$formatted_date/g" \
-                -e "s/%TIME%/$formatted_time/g" \
-                -e "s/%FILE%/$filename/g" \
-                -e "s/%MSG%/$line/g")
+        # Replace placeholders using parameter expansion instead of sed
+        local formatted_line="$LOG_FORMAT_TEMPLATE"
+        formatted_line="${formatted_line//%DATE%/$formatted_date}"
+        formatted_line="${formatted_line//%TIME%/$formatted_time}"
+        formatted_line="${formatted_line//%FILE%/$filename}"
+        formatted_line="${formatted_line//%MSG%/$line}"
     else
         # Use default format
         local formatted_line="${formatted_date} ${formatted_time} [${filename}]: ${line}"
@@ -262,6 +279,23 @@ log() {
     local colored_line=$(colorize "$formatted_line")
 
     echo -e "$colored_line"
+}
+
+# A safe wrapper for sed to handle potential errors
+safe_sed() {
+    local input="$1"
+    local pattern="$2"
+    
+    # Try to use sed, but catch errors
+    local result
+    result=$(echo "$input" | sed -E "$pattern" 2>/dev/null)
+    
+    # If sed fails, return the original input
+    if [ $? -ne 0 ]; then
+        echo "$input"
+    else
+        echo "$result"
+    fi
 }
 
 log_tails() {
