@@ -68,7 +68,7 @@ main() {
     
     # Auto-source startup hooks
     log "Running startup hooks..."
-    auto_source_directory "$SCRIPTS/container/hooks/startup"
+    run_hooks "$SCRIPTS/container/hooks/startup"
     
     # Call log_tails function which tails all logs in $LOGS directory
     log_tails
