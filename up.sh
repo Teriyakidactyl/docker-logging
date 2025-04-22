@@ -68,7 +68,7 @@ main() {
     
     # Auto-source startup hooks
     log "Running startup hooks..."
-    run_hooks "$SCRIPTS/container/hooks/startup"
+    run_hooks "startup"
     
     # Call log_tails function which tails all logs in $LOGS directory
     log_tails
@@ -158,7 +158,7 @@ auto_source_directory() {
 # Run hook scripts in a specific directory
 run_hooks() {
     local hook_type=$1
-    local hook_dir="/hooks/$hook_type"
+    local hook_dir="$SCRIPTS/container/hooks/$hook_type"
     
     if [ ! -d "$hook_dir" ]; then
         log "Hook directory $hook_dir does not exist, skipping" "hooks"
