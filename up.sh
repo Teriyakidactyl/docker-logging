@@ -175,20 +175,14 @@ run_hooks() {
         return 0
     fi
     
-    # Execute each hook
+    # Source each hook instead of executing it
     for hook in "${files[@]}"; do
         local hook_name=$(basename "$hook")
-        log "Executing $hook_name" "hooks"
+        log "Sourcing $hook_name" "hooks"
         
-        # Run the hook and capture output
-        local output
-        if ! output=$("$hook" 2>&1); then
-            log "ERROR in $hook_name hook: $output" "hooks"
-        else
-            # Log output if not empty
-            if [ -n "$output" ]; then
-                log "Output from $hook_name: $output" "hooks"
-            fi
+        # Source the hook in the current shell environment
+        if ! source "$hook"; then
+            log "ERROR sourcing $hook_name hook" "hooks"
         fi
     done
     
