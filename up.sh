@@ -67,8 +67,10 @@ main() {
     run_hooks "startup" 
  
     # Launch the main application process
+    log "--------------------------------" "up.sh"
     log "Launching application: $APP_NAME" "up.sh"
     { echo "$APP_COMMAND" | sed 's/ -/\n    -/g' | sed 's/ --/\n    --/g'; } | log_stdout "up.sh"
+    log "--------------------------------" "up.sh"
     
     # Run the application in the background and capture its PID
     $APP_COMMAND >> $LOGS/$APP_EXE.log 2>&1 &
