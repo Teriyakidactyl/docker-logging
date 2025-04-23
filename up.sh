@@ -282,16 +282,18 @@ shutdown() {
         kill -TERM $APP_PID 2>/dev/null
         
         # Wait for the process to terminate, with a timeout
-        local timeout=9  # Docker typically gives 10 seconds
-        for ((i=0; i<timeout; i++)); do
+        local total_timeout=9  # Docker typically gives 10 seconds
+        local kill_threshold=$((total_timeout * 2 / 3))  # Send SIGKILL after ~2/3 of the timeout
+        
+        for ((i=0; i<total_timeout; i++)); do
             if ! kill -0 $APP_PID 2>/dev/null; then
                 log "Application process terminated gracefully" && sync
                 break
             fi
             sleep 1
             
-            # If we've waited more than 5 seconds, try SIGKILL as last resort
-            if [ $i -eq 5 ]; then
+            # If we've waited beyond our threshold, try SIGKILL as last resort
+            if [ $i -eq $kill_threshold ]; then
                 log "Application not responding to SIGTERM, sending SIGKILL..." && sync
                 kill -KILL $APP_PID 2>/dev/null || true
             fi
