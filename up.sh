@@ -65,7 +65,9 @@ main() {
         if [[ "$APP_ARGS" == *\$* ]]; then
             log "Unexpanded variables found in APP_ARGS - expanding now" "startup_script.sh"
             eval "APP_ARGS=\"$APP_ARGS\""
+            export APP_ARGS
             log "APP_ARGS expanded successfully" "startup_script.sh"
+            log "DEBUG: APP_ARGS=$APP_ARGS" "startup_script.sh"
         else
             log "APP_ARGS already expanded, continuing" "startup_script.sh"
         fi
