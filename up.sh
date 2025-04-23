@@ -55,15 +55,25 @@ CONTAINER_START_TIME=${CONTAINER_START_TIME:-$(date -u +%s)}
 # Main --------------------------------------------------------------------------------------
 main() {
     
-    # Validate APP_COMMAND
-    if [ -z "$APP_COMMAND" ]; then
-        log "WARNING - APP_COMMAND is not set, defaulting to /bin/bash"
-        APP_COMMAND="/bin/bash"
-    fi
-    
     initialize_cron
     log_clean
     run_hooks "startup" 
+
+    # Check if APP_ARGS exists & Assemble APP_COMMAND
+    if [ -n "$APP_ARGS" ]; then
+        # Check if unexpanded variables are present by looking for $ character
+        if [[ "$APP_ARGS" == *\$* ]]; then
+            log "Unexpanded variables found in APP_ARGS - expanding now" "startup_script.sh"
+            eval "APP_ARGS=\"$APP_ARGS\""
+            log "APP_ARGS expanded successfully" "startup_script.sh"
+        else
+            log "APP_ARGS already expanded, continuing" "startup_script.sh"
+        fi
+        APP_COMMAND="$APP_COMMAND_PREFIX $APP_FILES/$APP_EXE $APP_ARGS"
+    else
+        log "WARNING: APP_ARGS not defined" "startup_script.sh"
+        APP_COMMAND="$APP_COMMAND_PREFIX $APP_FILES/$APP_EXE"
+    fi    
  
     # Launch the main application process
     log "--------------------------------" "up.sh"
