@@ -98,6 +98,8 @@ main() {
         run_cron_hooks  
        
         # Sleep & wait (to maintain signal awareness)
+        # https://stackoverflow.com/questions/56981892/why-do-sleep-wait-in-bash
+        # https://cloud.theodo.com/en/blog/docker-processes-container
         sleep 60 & 
         wait $!
     done
@@ -306,10 +308,7 @@ shutdown() {
 }
 
 # Setup signal handlers - Tini will forward these signals to our process
-trap 'log "SIGTERM received"; shutdown' SIGTERM
-trap 'log "SIGINT received"; shutdown' SIGINT
-trap 'log "SIGQUIT signal received"; shutdown' SIGQUIT
-trap 'log "EXIT signal received"; shutdown' EXIT
+trap 'log "Received signal: $?" && shutdown' SIGTERM SIGINT SIGQUIT EXIT
 
 # Start the main function
 main
