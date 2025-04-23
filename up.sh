@@ -20,6 +20,7 @@
 #   run_hooks - Executes hook scripts in a specified directory
 #   shutdown - Handles graceful container termination
 #
+# TODO only include external ENV in documentation
 # Environment Variables:
 #   APP_COMMAND - Command to execute as the main application process
 #   CONTAINER_START_TIME - Unix timestamp when container started
@@ -53,8 +54,6 @@ CONTAINER_START_TIME=${CONTAINER_START_TIME:-$(date -u +%s)}
 
 # Main --------------------------------------------------------------------------------------
 main() {
-    # Array to store PIDs of tail processes
-    tail_pids=()
     
     # Validate APP_COMMAND
     if [ -z "$APP_COMMAND" ]; then
@@ -68,6 +67,7 @@ main() {
  
     # Launch the main application process
     log "--------------------------------" "up.sh"
+    log "" "up.sh"
     log "Launching application: $APP_NAME" "up.sh"
     { echo "$APP_COMMAND" | sed 's/ -/\n    -/g' | sed 's/ --/\n    --/g'; } | log_stdout "up.sh"
     log "--------------------------------" "up.sh"
@@ -95,11 +95,7 @@ main() {
         current_minute=${current_minute#0}
         
         # Run scheduled cron hooks
-        run_cron_hooks
-
-        if (( current_minute % 10 == 0 )); then
-            log "$(uptime)"
-        fi        
+        run_cron_hooks  
        
         # Sleep for 1 minute before checking again
         sleep 60
@@ -263,48 +259,53 @@ initialize_cron() {
 
 # Graceful shutdown function for signals forwarded by Tini
 shutdown() {
-    log "Performing graceful shutdown..."
-
+    log "Performing graceful shutdown..." && sync
+    
     # Run shutdown hooks if they exist
     if [ -d "/hooks/shutdown" ]; then
-        log "Running shutdown hooks..."
+        log "Running shutdown hooks..." && sync
         run_hooks "shutdown"
     fi
-
+    
     # Stop tail processes
-    if [ ${#tail_pids[@]} -gt 0 ]; then
-        log "Stopping tail processes..."
-        kill -TERM "${tail_pids[@]}" 2>/dev/null || true
+    if [ -n "$TAIL_PGID" ]; then
+        log "Stopping tail processes..." && sync
+        kill -TERM -$TAIL_PGID 2>/dev/null || true
     fi
-
+    
     # Stop main application process if it's running
     if [ -n "$APP_PID" ] && kill -0 $APP_PID > /dev/null 2>&1; then
-        log "Stopping application process (PID: $APP_PID)..."
+        log "Stopping application process (PID: $APP_PID)..." && sync
         kill -TERM $APP_PID 2>/dev/null
         
         # Wait for the process to terminate, with a timeout
-        local timeout=30  # Increased timeout for larger applications
+        local timeout=9  # Docker typically gives 10 seconds
         for ((i=0; i<timeout; i++)); do
             if ! kill -0 $APP_PID 2>/dev/null; then
-                log "Application process terminated gracefully"
+                log "Application process terminated gracefully" && sync
                 break
             fi
             sleep 1
             
-            # If we've waited more than 15 seconds, send SIGKILL
-            if [ $i -eq 15 ]; then
-                log "Application not responding to SIGTERM, sending SIGKILL..."
+            # If we've waited more than 5 seconds, try SIGKILL as last resort
+            if [ $i -eq 5 ]; then
+                log "Application not responding to SIGTERM, sending SIGKILL..." && sync
                 kill -KILL $APP_PID 2>/dev/null || true
             fi
         done
+        
+        # Add a warning if process still running after our timeout
+        if kill -0 $APP_PID 2>/dev/null; then
+            log "WARNING: Application still running - Docker may force termination" && sync
+        fi
     fi
-
-    log "Cleanup complete. Exiting."
+    
+    log "Cleanup complete. Exiting." && sync
     exit 0
 }
 
 # Setup signal handlers - Tini will forward these signals to our process
-trap 'shutdown' SIGTERM SIGINT
+trap 'shutdown' SIGTERM SIGINT EXIT
 
 # Start the main function
 main

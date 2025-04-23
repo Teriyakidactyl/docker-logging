@@ -299,22 +299,24 @@ safe_sed() {
 }
 
 log_tails() {
+    # Create a new process group for all tails
+    set -m  # Enable job control
+    
     # Define the log files to monitor
     local LOG_FILES=($(find "$LOGS" -type f \( -name "*.log" -o -name "*log.txt" \)))
 
-    # Tail each log file and process each line
+    # Tail each log file in the background
     for file in "${LOG_FILES[@]}"; do
-        # Check if the file exists and is readable
         if [ -f "$file" ] && [ -r "$file" ]; then
-            # Use tail and while loop to process each line
+            # Start tail in background
             tail -f "$file" | while IFS= read -r line; do
                 log "$line" "$(basename "$file")"
             done &
-            export tail_pids+=($!)
-        else
-            log "File '$file' does not exist or is not readable." "common/monitor_logs"
         fi
     done
+    
+    # Store the process group ID instead of individual PIDs
+    TAIL_PGID=$!
 }
 
 log_stdout() {
