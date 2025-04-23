@@ -82,7 +82,7 @@ main() {
         exit 1
     fi
     
-    log "Container monitoring started for $APP_COMMAND (PID: $APP_PID)"
+    # log "Container monitoring started for $APP_COMMAND (PID: $APP_PID)"
 
     # Call log_tails function which tails all logs in $LOGS directory
     log_tails
@@ -97,8 +97,9 @@ main() {
         # Run scheduled cron hooks
         run_cron_hooks  
        
-        # Sleep for 1 minute before checking again
-        sleep 60
+        # Sleep & wait (to maintain signal awareness)
+        sleep 60 & 
+        wait $!
     done
     
     log "ERROR - $APP_COMMAND @PID $APP_PID appears to have died! $(uptime)"
@@ -305,7 +306,10 @@ shutdown() {
 }
 
 # Setup signal handlers - Tini will forward these signals to our process
-trap 'shutdown' SIGTERM SIGINT EXIT
+trap 'log "SIGTERM received"; shutdown' SIGTERM
+trap 'log "SIGINT received"; shutdown' SIGINT
+trap 'log "SIGQUIT signal received"; shutdown' SIGQUIT
+trap 'log "EXIT signal received"; shutdown' EXIT
 
 # Start the main function
 main
