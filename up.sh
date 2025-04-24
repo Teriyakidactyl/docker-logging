@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # ==============================================================================
 # Container Base Script
 # ==============================================================================
@@ -20,17 +21,25 @@
 #   run_hooks - Executes hook scripts in a specified directory
 #   shutdown - Handles graceful container termination
 #
-# TODO only include external ENV in documentation
 # Environment Variables:
 #   APP_COMMAND - Command to execute as the main application process
-#   CONTAINER_START_TIME - Unix timestamp when container started
-#   AUTO_UPDATE - Whether to perform automatic updates (default: true)
+#   APP_ARGS - Arguments to pass to the main application process
+#   APP_COMMAND_PREFIX - Prefix for the application command
+#   APP_FILES - Directory containing application files
+#   APP_EXE - Executable filename for the application
+#   APP_NAME - Name of the application for logging purposes
 #   LOG_UPTIME - Whether to log uptime periodically (default: true)
-#   CRON_* - Variables to configure scheduling of cron tasks
+#   CRON_DAILY_HOUR - Hour of day to run daily tasks (default: 03)
+#   CRON_WEEKLY_DAY - Day of week to run weekly tasks (default: 0/Sunday)
+#   CRON_WEEKLY_HOUR - Hour of day to run weekly tasks (default: 04)
+#   CRON_MONTHLY_DAY - Day of month to run monthly tasks (default: 01)
+#   CRON_MONTHLY_HOUR - Hour of day to run monthly tasks (default: 05)
+#   SCRIPTS - Base directory for scripts
+#   LOGS - Directory for log files
 #
 # Dependencies:
 #   - tini (as the init process)
-#   - functions.sh from docker-logging directory
+#   - logging.sh from container directory
 #   - Hook directories (optional): 
 #     - /hooks/startup
 #     - /hooks/hourly
@@ -96,8 +105,6 @@ main() {
         exit 1
     fi
     
-    # log "Container monitoring started for $APP_COMMAND (PID: $APP_PID)"
-
     # Call log_tails function which tails all logs in $LOGS directory
     log_tails
     
@@ -112,8 +119,6 @@ main() {
         run_cron_hooks  
        
         # Sleep & wait (to maintain signal awareness)
-        # https://stackoverflow.com/questions/56981892/why-do-sleep-wait-in-bash
-        # https://cloud.theodo.com/en/blog/docker-processes-container
         sleep 60 & 
         wait $!
     done
@@ -224,19 +229,7 @@ run_cron_hooks() {
     if [ "$current_hour" = "$daily_hour" ] && [ "$current_day" != "$LAST_DAILY_RUN" ]; then
         log "Running daily hooks (day $current_day)" "cron"
         run_hooks "daily"
-        LAST_DAILY_RUN=$current_day
-        
-        # Check for updates as part of daily routine if auto-update is enabled
-        if [ "${AUTO_UPDATE:-true}" = "true" ]; then
-            log "Running daily server update" "cron"
-            run_hooks "pre-update"
-            if command -v server_update >/dev/null 2>&1; then
-                server_update
-            else
-                log "WARNING: server_update function not found" "cron"
-            fi
-            run_hooks "post-update"
-        fi
+        LAST_DAILY_RUN=$current_day  
     fi
     
     # Run weekly hooks (on configured day at configured hour, default: Sunday at 4 AM)
