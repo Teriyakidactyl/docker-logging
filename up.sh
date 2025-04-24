@@ -46,6 +46,8 @@
 # tini → up.sh → $APP_COMMAND
 # NOTE presumes this repo is cloned to $SCRIPTS/container
 
+set -euo pipefail
+
 # Source required files
 source $SCRIPTS/container/logging.sh
 
