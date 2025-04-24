@@ -19,7 +19,9 @@ export LOG_FILTER_INCLUDE=""
 export LOG_COLOR_LINE_RULES="(Shader|HDR|shader|WARNING|Unloading|Total:|UnloadTime|Camera|Null|null|NULL):WHITE,(Valheim l-.*|Load world:.*|isModded:.*|Am I Host\?|version|world):YELLOW,(Connections|ZDOS:|sent:|recv:|New connection|queue|connecting|Connecting|socket|Socket|RPC|Accepting connection|socket|msg|Connected|Got connection|handshake):CYAN,(New peer connected|<color=orange>.*</color>|ZDOID):GREEN,(ERROR:|Exception|HDSRDP|wrong password):BOLD_RED,(Added .* locations,|Loaded .* locations|Loading .* zdos|save|Save|backup):MAGENTA,(Console: ):BLUE"
   
 # Default word rules (only the matching word/pattern is colored, not the entire line)
-export LOG_COLOR_WORD_RULES="(varExp|\\$SERVER_NAME|\\$SERVER_PLAYER_PASS|\\$WORLD_NAME):BOLD_YELLOW,(?:ZDOID from ([\\w\\s]+) :):BOLD_GREEN,(SteamID \\d{17}|client \\d{17}|socket \\d{17}):BOLD_CYAN"
+# NOTE the variables in the list must exist!
+# varExp|\\$SERVER_NAME|\\$SERVER_PASS|\\$WORLD_NAME):BOLD_YELLOW,
+export LOG_COLOR_WORD_RULES="((?:ZDOID from ([\\w\\s]+) :):BOLD_GREEN,(SteamID \\d{17}|client \\d{17}|socket \\d{17}):BOLD_CYAN"
 
 # Timestamp formatting
 # Format for timestamps (standard, iso8601, compact)
