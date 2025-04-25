@@ -58,6 +58,7 @@
 set -euo pipefail
 
 # Source required files
+source /etc/environment
 source $SCRIPTS/container/logging.sh
 
 # Set container start time if not already set
