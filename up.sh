@@ -69,7 +69,7 @@ main() {
     
     initialize_cron
     log_clean
-    run_hooks "startup" 
+    run_hooks "pre-startup" 
 
     # Check if APP_ARGS exists & Assemble APP_COMMAND
     if [ -n "$APP_ARGS" ]; then
@@ -87,8 +87,10 @@ main() {
     else
         log "WARNING: APP_ARGS not defined" "startup_script.sh"
         APP_COMMAND="$APP_COMMAND_PREFIX $APP_FILES/$APP_EXE"
-    fi    
- 
+    fi
+
+    # TODO implement startup run_hooks "startup" override (it only run if present, if not it runs the default below)
+
     # Launch the main application process
     log "--------------------------------" "up.sh"
     log "" "up.sh"
