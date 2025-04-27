@@ -89,8 +89,14 @@ main() {
         APP_COMMAND="$APP_COMMAND_PREFIX $APP_FILES/$APP_EXE"
     fi
 
-    # TODO implement startup run_hooks "startup" override (it only run if present, if not it runs the default below)
-
+    # Check for startup hook and override if present
+    if [ -d "$HOOK_DIRECTORIES/startup" ] && [ "$(ls -A "$HOOK_DIRECTORIES/startup")" ]; then
+        run_hooks "startup" 
+        # TODO APP_PID needs to get captured in override
+        # TODO >> $LOGS/$APP_EXE.log 2>&1 & needs to be in overide
+        # TODO $APP_COMMAND could be overwritten with a script path? and the call could remain the same
+    fi
+    
     # Launch the main application process
     log "--------------------------------" "up.sh"
     log "" "up.sh"
@@ -101,7 +107,7 @@ main() {
     # Run the application in the background and capture its PID
     $APP_COMMAND >> $LOGS/$APP_EXE.log 2>&1 &
     APP_PID=$!
-    
+        
     # Verify the process started successfully
     if ! kill -0 $APP_PID > /dev/null 2>&1; then
         log "ERROR - Failed to start $APP_COMMAND"
@@ -178,7 +184,7 @@ auto_source_directory() {
 # Run hook scripts in a specific directory
 run_hooks() {
     local hook_type=$1
-    local hook_dir="$SCRIPTS/container/hooks/$hook_type"
+    local hook_dir="$HOOK_DIRECTORIES/$hook_type"
     
     if [ ! -d "$hook_dir" ]; then
         log "Hook directory $hook_dir does not exist, skipping" "hooks"
@@ -275,7 +281,7 @@ shutdown() {
     log "Performing graceful shutdown..." && sync
     
     # Run shutdown hooks if they exist
-    if [ -d "/hooks/shutdown" ]; then
+    if [ -d "$HOOK_DIRECTORIES/shutdown" ]; then
         log "Running shutdown hooks..." && sync
         run_hooks "shutdown"
     fi
